@@ -18,29 +18,15 @@ email = nick@nickwhite.co
 	cleanup = "!f() { \
 		git fetch --prune; \
 		base=$(git symbolic-ref --quiet refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'); \
-		kill_tmux_by_name() { \
-			command -v tmux >/dev/null 2>&1 || return 0; \
-			targets=$(tmux list-windows -a -F '#{session_name}:#{window_index}:#{window_name}' 2>/dev/null | \
-				awk -F: -v b=\"$1\" '$3==b {print $1 \":\" $2}'); \
-			[ -n \"$targets\" ] || return 0; \
-			printf '%s\n' \"$targets\" | while IFS= read -r target; do \
-				tmux kill-window -t \"$target\"; \
-			done; \
-		}; \
-		delete_branch() { \
-			branch=\"$1\"; \
-			kill_tmux_by_name \"$branch\"; \
-			git worktree remove \"../$branch\"; \
-			git branch -D \"$branch\"; \
-		}; \
 		for b in $(git for-each-ref --format='%(refname:short)' refs/heads); do \
 			[ \"$b\" = \"$(git symbolic-ref --quiet --short HEAD)\" ] && continue; \
 			[ \"$b\" = \"$base\" ] && continue; \
 			git config --get branch.$b.remote >/dev/null || continue; \
 			git rev-parse --quiet --verify \"$b@{upstream}\" >/dev/null || { \
-			echo \"Deleting $b (upstream gone)\"; delete_branch \"$b\"; continue; }; \
+			echo \"Deleting $b (upstream gone)\"; git branch -D \"$b\"; continue; }; \
 			git cherry -v \"origin/$base\" \"$b\" | grep -q '^+' || { \
-			echo \"Deleting $b (already merged)\"; delete_branch \"$b\"; }; \
+			echo \"Deleting $b (already merged)\"; git branch -D \"$b\"; }; \
 		done; \
 		}; f"
-	begin = "!f() { \"$HOME/scripts/work\" \"$@\"; }; f"
+[init]
+	defaultBranch = main
