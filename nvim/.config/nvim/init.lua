@@ -6,7 +6,6 @@ end
 local Plug = vim.fn["plug#"]
 vim.call("plug#begin")
 Plug("christoomey/vim-tmux-navigator")
-Plug("github/copilot.vim")
 Plug("neovim/nvim-lspconfig")
 Plug("nvim-lua/plenary.nvim")
 Plug("nvim-lualine/lualine.nvim")
@@ -157,10 +156,45 @@ require("lualine").setup({
 })
 
 -- lsp
+local function append_node_options(opts)
+  local current = vim.env.NODE_OPTIONS or ""
+  if current == "" then
+    return opts
+  end
+
+  for opt in opts:gmatch("%S+") do
+    if not current:find(opt, 1, true) then
+      current = current .. " " .. opt
+    end
+  end
+
+  return current
+end
+
+local node_lsp_env = {
+  NODE_OPTIONS = append_node_options("--max-old-space-size=8192 --no-warnings=ExperimentalWarning"),
+}
+
+vim.lsp.config("ts_ls", {
+  cmd_env = node_lsp_env,
+})
+
 vim.lsp.config("eslint", {
-  root_markers = { ".git" },
+  root_markers = {
+    "eslint.config.js",
+    "eslint.config.mjs",
+    "eslint.config.cjs",
+    ".eslintrc",
+    ".eslintrc.js",
+    ".eslintrc.cjs",
+    ".eslintrc.json",
+    "package.json",
+  },
+  single_file_support = false,
+  cmd_env = node_lsp_env,
   settings = {
     run = "onSave",
+    workingDirectory = { mode = "auto" },
   },
   flags = {
     debounce_text_changes = 500,
